@@ -2,11 +2,14 @@ package org.horreum.perf.proxy.proxy.smee;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.horreum.perf.proxy.Handler;
 import org.horreum.perf.proxy.data.RequestPayload;
 import org.horreum.perf.proxy.proxy.smee.sse.EventStreamListener;
@@ -14,36 +17,46 @@ import org.horreum.perf.proxy.proxy.smee.sse.HttpEventStreamClient;
 import org.jboss.logging.Logger;
 
 import java.net.http.HttpResponse;
+import java.util.Optional;
 
 
 @ApplicationScoped
 @Startup
 public class SmeeIoProxy {
 
-
+    @ConfigProperty(name = "proxy.smee.uid")
+    Optional<String> uid;
 
     private static final Logger LOG = Logger.getLogger(SmeeIoProxy.class);
 
     private static final String EMPTY_MESSAGE = "{}";
 
-    private final HttpEventStreamClient eventStreamClient;
-    private final ReplayEventStreamAdapter replayEventStreamAdapter;
+    private HttpEventStreamClient eventStreamClient;
+    private ReplayEventStreamAdapter replayEventStreamAdapter;
 
-    private static final String PROXY_URL = "https://smee.io/YSjZRcvD6VtIqYS";
+    private static final String PROXY_URL = "https://smee.io/";
 
     @Inject
     Handler handler;
 
     @Inject
-    SmeeIoProxy(ObjectMapper objectMapper) {
+    ObjectMapper objectMapper;
 
-        LOG.info("Listening to events coming from " + PROXY_URL);
+    public void init(@Observes StartupEvent ev) {
+
+        if ( uid == null || uid.isEmpty() ) {
+            LOG.infof("smee.io proxy not configured, skipping");
+            return;
+        }
+
+        String smeeUrl = PROXY_URL.concat(uid.get());
+        LOG.info("Listening to events coming from " + smeeUrl);
 
 //        URI localUrl = URI.create("http://" + httpConfiguration.host + ":" + httpConfiguration.port + "/");
 
-        this.replayEventStreamAdapter = new ReplayEventStreamAdapter(PROXY_URL,
+        this.replayEventStreamAdapter = new ReplayEventStreamAdapter(smeeUrl,
                 objectMapper);
-        this.eventStreamClient = new HttpEventStreamClient(PROXY_URL,
+        this.eventStreamClient = new HttpEventStreamClient(smeeUrl,
                 this.replayEventStreamAdapter);
         this.eventStreamClient.setRetryCooldown(3000);
         this.eventStreamClient.start();
