@@ -1,0 +1,24 @@
+[
+  {
+    "name": "util",
+    "jenkinsJob": "My Util",
+    "requiredParams": [
+      "param1",
+      "param2"
+    ]
+  },
+  {
+    "name": "prow-scraper",
+    "jenkinsJob": "horreum-healthcheck",
+    "requiredParams": [
+      "param1",
+      "param2"
+    ]
+  }
+,
+  {
+    "name": "horreum-healthcheck",
+    "jenkinsJob": "Utility Scripts/Horreum-Healthcheck",
+    "requiredParams": [ ]
+  }
+]

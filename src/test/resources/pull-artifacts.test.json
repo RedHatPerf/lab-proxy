@@ -1,0 +1,12 @@
+{
+  "uuid": "f1b3b3b0-1b3b-11e2-8b8b-0800200c9a66",
+  "jobName": "horreum-healthcheck",
+  "parameters": {
+    "job": "pull-ci-openshift-rosa-master-build",
+    "build-id": 1785725737190297600,
+    "status": "passed",
+    "started-at": "2024-05-01 17:39:32 +0000 UTC",
+    "elapsed": "4m22s",
+    "artifact-url": "https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/test-platform-results/pr-logs/pull/openshift_rosa/1990/pull-ci-openshift-rosa-master-build/1785725737190297600/"
+  }
+}

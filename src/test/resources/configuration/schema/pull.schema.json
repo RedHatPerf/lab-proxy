@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/pull.schema.json",
+  "title": "Data Pull Request",
+  "description": "A webhook request to pull data from an external source",
+  "type": "object",
+  "properties": {
+    "uuid": {
+      "description": "The unique identifier for a job",
+      "type": "string",
+      "exclusiveMinimum": 0
+    },
+    "jobName": {
+      "description": "The name of pull job to invoke",
+      "type": "string",
+      "exclusiveMinimum": 0
+    },
+    "parameters": {
+      "description": "Parameters to pass to the pull job",
+      "type": "object"
+    }
+
+  },
+  "required": ["uuid", "jobName"]
+}
