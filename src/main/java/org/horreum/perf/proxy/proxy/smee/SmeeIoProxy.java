@@ -2,7 +2,6 @@ package org.horreum.perf.proxy.proxy.smee;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
@@ -10,7 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.horreum.perf.proxy.Handler;
+import org.horreum.perf.proxy.services.PayloadHandler;
 import org.horreum.perf.proxy.data.RequestPayload;
 import org.horreum.perf.proxy.proxy.smee.sse.EventStreamListener;
 import org.horreum.perf.proxy.proxy.smee.sse.HttpEventStreamClient;
@@ -37,7 +36,7 @@ public class SmeeIoProxy {
     private static final String PROXY_URL = "https://smee.io/";
 
     @Inject
-    Handler handler;
+    PayloadHandler handler;
 
     @Inject
     ObjectMapper objectMapper;

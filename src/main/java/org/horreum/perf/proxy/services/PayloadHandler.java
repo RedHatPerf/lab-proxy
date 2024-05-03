@@ -1,9 +1,11 @@
-package org.horreum.perf.proxy;
+package org.horreum.perf.proxy.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.offbytwo.jenkins.JenkinsServer;
-import com.offbytwo.jenkins.model.*;
+import com.offbytwo.jenkins.model.FolderJob;
+import com.offbytwo.jenkins.model.JobWithDetails;
+import com.offbytwo.jenkins.model.QueueItem;
+import com.offbytwo.jenkins.model.QueueReference;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,10 +24,7 @@ resolving the allows jenkins job definitions, validating the payload, and trigge
 
  */
 @ApplicationScoped
-public class Handler {
-
-    @Inject
-    ObjectMapper objectMapper;
+public class PayloadHandler {
 
     @Inject
     JenkinsServer jenkinsServer;
@@ -35,23 +34,13 @@ public class Handler {
 
     private static final Logger LOG = Logger.getLogger(WebhookProxy.class);
 
-    public void handle(String payload) {
-        try {
-            handle(objectMapper.readValue(payload, RequestPayload.class));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
+    @WithSpan("requests")
     public void handle(RequestPayload payload) throws IOException {
         if (payload != null) {
             LOG.debugf("Received payload: %s", payload);
         }
 
-        if (!jenkinsServer.isRunning()) {
+        if (!isRunning()) {
             LOG.error("Jenkins server is NOT running");
             return;
         }
@@ -79,24 +68,9 @@ public class Handler {
 
         //todo: there must be an easier way of traversing the job tree!
         //otherwise we go back to a simple http call
-        JobWithDetails jenkinsJob = null;
-        for (String jobName : jobPath) {
-            if (jenkinsJob == null) {
-                jenkinsJob = jenkinsServer.getJob(jobName);
-            } else {
-                if (!jenkinsJob.isBuildable()) {
-                    FolderJob folder = jenkinsServer.getFolderJob(jenkinsJob).orNull();
-                    if (folder == null) {
-                        Log.errorf("Could not retrieve folder: %s", jenkinsJob.getFullName());
-                        return;
-                    }
-                    jenkinsJob = jenkinsServer.getJob(folder, jobName);
-                } else {
-                    Log.errorf("Current job is not a folder: %s", jenkinsJob.getFullName());
-                    return;
-                }
-            }
-        }
+        JobWithDetails jenkinsJob = getJobWithDetails(jobPath);
+
+        if (jenkinsJob == null) return;
 
         //start job running
         if (jenkinsJob == null) {
@@ -107,11 +81,7 @@ public class Handler {
         QueueReference queueReference = null;
         try {
             LOG.debugf("Building jenkins jobs: %s", jobDefinition.jenkinsJob);
-            if (payload.parameters.isEmpty()) {
-                queueReference = jenkinsJob.build();
-            } else {
-                queueReference = jenkinsJob.build(payload.parameters);
-            }
+            queueReference = buildJob(payload, jenkinsJob);
         } catch (IOException e) {
             Log.errorv(e, "Could not build Jenkins Job: %s", jobDefinition.jenkinsJob);
             return;
@@ -124,11 +94,55 @@ public class Handler {
 
         LOG.debugf("Retrieving queued job details: %s", jobDefinition.jenkinsJob);
 
-        QueueItem jenkinsQueueItem = jenkinsServer.getQueueItem(queueReference);
+        QueueItem jenkinsQueueItem = getQueueItem(queueReference);
 
         LOG.infof("Jenkins job queued: %s", jenkinsQueueItem.getTask().getUrl());
 
+    }
 
+    @WithSpan("jenkins-queue-item")
+    public QueueItem getQueueItem(QueueReference queueReference) throws IOException {
+        return jenkinsServer.getQueueItem(queueReference);
+    }
+
+    @WithSpan("jenkins-build-job")
+    public QueueReference buildJob(RequestPayload payload, JobWithDetails jenkinsJob) throws IOException {
+        QueueReference queueReference;
+        if (payload.parameters.isEmpty()) {
+            queueReference = jenkinsJob.build();
+        } else {
+            queueReference = jenkinsJob.build(payload.parameters);
+        }
+        return queueReference;
+    }
+
+    @WithSpan("jenkins-is-running")
+    public boolean isRunning() {
+        return jenkinsServer.isRunning();
+    }
+
+    @WithSpan("jenkins-get-job")
+    public JobWithDetails getJobWithDetails(String[] jobPath) throws IOException {
+        JobWithDetails jenkinsJob = null;
+
+        for (String jobName : jobPath) {
+            if (jenkinsJob == null) {
+                jenkinsJob = jenkinsServer.getJob(jobName);
+            } else {
+                if (!jenkinsJob.isBuildable()) {
+                    FolderJob folder = jenkinsServer.getFolderJob(jenkinsJob).orNull();
+                    if (folder == null) {
+                        Log.errorf("Could not retrieve folder: %s", jenkinsJob.getFullName());
+                        return null;
+                    }
+                    jenkinsJob = jenkinsServer.getJob(folder, jobName);
+                } else {
+                    Log.errorf("Current job is not a folder: %s", jenkinsJob.getFullName());
+                    return null;
+                }
+            }
+        }
+        return jenkinsJob;
     }
 }
 

@@ -1,7 +1,5 @@
 package org.horreum.perf.proxy.data;
 
-import com.offbytwo.jenkins.model.FolderJob;
-
 import java.util.List;
 
 public class JobDefinition {
