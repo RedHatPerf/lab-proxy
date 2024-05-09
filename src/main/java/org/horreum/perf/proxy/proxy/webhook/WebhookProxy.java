@@ -2,7 +2,6 @@ package org.horreum.perf.proxy.proxy.webhook;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.vertx.core.eventbus.EventBus;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -10,6 +9,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.horreum.perf.proxy.data.RequestPayload;
+import org.horreum.perf.proxy.services.MessageBus;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
@@ -23,7 +23,7 @@ public class WebhookProxy {
     ObjectMapper objectMapper;
 
     @Inject
-    EventBus bus;
+    MessageBus bus;
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
@@ -35,7 +35,7 @@ public class WebhookProxy {
         Response.Status status = Response.Status.ACCEPTED;
         try {
             requestPayload = objectMapper.readValue(payload, RequestPayload.class);
-            bus.publish("ci-requests", requestPayload);
+            bus.publish(requestPayload);
         } catch (JsonProcessingException e) {
             LOG.error("Error parsing payload", e);
             status = Response.Status.INTERNAL_SERVER_ERROR;
@@ -44,8 +44,8 @@ public class WebhookProxy {
             status = Response.Status.INTERNAL_SERVER_ERROR;
         }
 
-
         return Response.status(status).build();
 
     }
+
 }

@@ -3,25 +3,22 @@ package org.horreum.perf.proxy.proxy.smee;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.ShutdownEvent;
-import io.quarkus.runtime.Startup;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.horreum.perf.proxy.services.PayloadHandler;
 import org.horreum.perf.proxy.data.RequestPayload;
+import org.horreum.perf.proxy.proxy.IProxy;
 import org.horreum.perf.proxy.proxy.smee.sse.EventStreamListener;
 import org.horreum.perf.proxy.proxy.smee.sse.HttpEventStreamClient;
+import org.horreum.perf.proxy.services.MessageBus;
+import org.horreum.perf.proxy.services.PayloadHandler;
 import org.jboss.logging.Logger;
 
 import java.net.http.HttpResponse;
 import java.util.Optional;
 
 
-@ApplicationScoped
-@Startup
-public class SmeeIoProxy {
+public class SmeeIoProxy implements IProxy {
 
     @ConfigProperty(name = "proxy.smee.uid")
     Optional<String> uid;
@@ -35,18 +32,23 @@ public class SmeeIoProxy {
 
     private static final String PROXY_URL = "https://smee.io/";
 
-    @Inject
-    PayloadHandler handler;
+    private boolean running = false;
 
-    @Inject
+    MessageBus messageBus;
+
     ObjectMapper objectMapper;
 
-    public void init(@Observes StartupEvent ev) {
+
+    @Override
+    public void start(ObjectMapper objectMapper, MessageBus messageBus) {
 
         if ( uid == null || uid.isEmpty() ) {
             LOG.infof("smee.io proxy not configured, skipping");
             return;
         }
+
+        this.messageBus = messageBus;
+        this.objectMapper = objectMapper;
 
         String smeeUrl = PROXY_URL.concat(uid.get());
         LOG.info("Listening to events coming from " + smeeUrl);
@@ -59,15 +61,24 @@ public class SmeeIoProxy {
                 this.replayEventStreamAdapter);
         this.eventStreamClient.setRetryCooldown(3000);
         this.eventStreamClient.start();
+        running = true;
     }
 
-    void stopEventSource(@Observes ShutdownEvent shutdownEvent) {
+    @Override
+    public void stop() {
         if (this.replayEventStreamAdapter != null) {
             this.replayEventStreamAdapter.stop();
         }
         if (this.eventStreamClient != null) {
             this.eventStreamClient.stop();
         }
+
+        running = false;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
     }
 
     private class ReplayEventStreamAdapter implements EventStreamListener {
@@ -116,7 +127,7 @@ public class SmeeIoProxy {
                 if (payload != null) {
                     LOG.debugf("Received body: %s", payload.toString());
 
-                    handler.handle(payload);
+                    messageBus.publish(payload);
 /*
                     HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(localUrl)
                             .POST(BodyPublishers.ofString(objectMapper.writeValueAsString(rootNode.get("body"))));

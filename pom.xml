@@ -15,6 +15,7 @@
     <quarkus.platform.version>3.10.0</quarkus.platform.version>
     <skipITs>true</skipITs>
     <surefire-plugin.version>3.2.5</surefire-plugin.version>
+    <ngrok.version>0.5.0</ngrok.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -57,6 +58,26 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-jackson</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>com.ngrok</groupId>
+      <artifactId>ngrok-java</artifactId>
+      <version>${ngrok.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.ngrok</groupId>
+      <artifactId>ngrok-java-native</artifactId>
+      <version>${ngrok.version}</version>
+      <classifier>${os.detected.classifier}</classifier>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-http</artifactId>
+      <version>4.1.109.Final</version>
+    </dependency>
+
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>
@@ -124,6 +145,13 @@
         </configuration>
       </plugin>
     </plugins>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.0</version>
+      </extension>
+    </extensions>
   </build>
   <profiles>
     <profile>
