@@ -20,7 +20,7 @@ public class HandlerService {
     @Inject
     PayloadHandler handler;
 
-    @ConsumeEvent("ci-requests")
+    @ConsumeEvent(MessageBus.TOPIC)
     public void consume(RequestPayload event) {
         try {
             handler.handle(event);

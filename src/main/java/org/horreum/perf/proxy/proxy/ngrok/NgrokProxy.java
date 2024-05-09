@@ -76,7 +76,6 @@ public class NgrokProxy implements IProxy {
                 try (final var listener = listenerBuilder.listen()) {
                     ngrokListener.set(listener);
                     Log.infof("ngrok url: %s", listener.getUrl());
-                    final var buf = ByteBuffer.allocateDirect(1024);
 
                     while (true) {
                         // Accept a new connection
@@ -84,11 +83,14 @@ public class NgrokProxy implements IProxy {
                         byte[] response;
 
                         // Read from the connection
-                        buf.clear();
+                        final var buf = ByteBuffer.allocateDirect(1024);
                         conn.read(buf);
-                        ByteBuf byteBuf = Unpooled.wrappedBuffer(buf.duplicate());
+                        ByteBuf byteBuf = Unpooled.wrappedBuffer(buf);
                         try {
                             List<Object> out = new ArrayList<>();
+
+                            //TODO:: this is not thread safe!
+                            decoder.reset();
                             //decode the HTTP request Headers
                             decoder.decode(null, byteBuf, out);
 
@@ -146,7 +148,9 @@ public class NgrokProxy implements IProxy {
                         } catch (Exception e) {
                             Log.error("Could not close parse http request", e);
                         }
-
+                        if ( byteBuf != null ) {
+                            byteBuf.release();
+                        }
                     }
                 }
             } catch (IOException e) {

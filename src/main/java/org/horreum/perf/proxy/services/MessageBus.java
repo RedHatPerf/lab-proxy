@@ -8,12 +8,12 @@ import org.horreum.perf.proxy.data.RequestPayload;
 
 @ApplicationScoped
 public class MessageBus {
-    private static final String topic = "ci-requests";
+    public static final String TOPIC = "ci-requests";
 
     @Inject
     EventBus bus;
 
     public void publish(@Nullable RequestPayload message) {
-        bus.publish("ci-requests", message);
+        bus.publish(TOPIC, message);
     }
 }
