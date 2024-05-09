@@ -58,7 +58,7 @@ public class NgrokProxy implements IProxy {
         userToken = ConfigProvider.getConfig().getValue("proxy.ngrok.userToken", String.class);
         domain = ConfigProvider.getConfig().getValue("proxy.ngrok.domain", String.class);
 
-        HttpServerRequestDecoder decoder = new HttpServerRequestDecoder();
+
 
         this.messageBus.set(messageBus);
 
@@ -87,10 +87,10 @@ public class NgrokProxy implements IProxy {
                         conn.read(buf);
                         ByteBuf byteBuf = Unpooled.wrappedBuffer(buf);
                         try {
+                            //allocate a new decoder - wastes memory, but for now this is a blocking operation, probably should move to a netty pipeline
+                            HttpServerRequestDecoder decoder = new HttpServerRequestDecoder();
                             List<Object> out = new ArrayList<>();
 
-                            //TODO:: this is not thread safe!
-                            decoder.reset();
                             //decode the HTTP request Headers
                             decoder.decode(null, byteBuf, out);
 
