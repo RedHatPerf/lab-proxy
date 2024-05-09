@@ -18,6 +18,7 @@ import org.horreum.perf.proxy.services.MessageBus;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -128,6 +129,7 @@ public class NgrokProxy implements IProxy {
                                     String msg = payload.toString().trim();
                                     Log.infof("Received message: %s", msg);
                                     RequestPayload requestPayload = objectMapper.readValue(msg, RequestPayload.class);
+                                    requestPayload.timestamp = Instant.now();
                                     this.messageBus.get().publish(requestPayload);
 
                                     response = RESPONSE_OK;
@@ -177,7 +179,7 @@ public class NgrokProxy implements IProxy {
 
     @Override
     public boolean isRunning() {
-        return false;
+        return ngrokListener.get() != null;
     }
 
     private String parseMsg(ByteBuffer buf) {

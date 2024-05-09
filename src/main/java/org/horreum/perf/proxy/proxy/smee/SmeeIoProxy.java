@@ -15,6 +15,7 @@ import org.horreum.perf.proxy.services.PayloadHandler;
 import org.jboss.logging.Logger;
 
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.util.Optional;
 
 
@@ -126,6 +127,7 @@ public class SmeeIoProxy implements IProxy {
 
                 if (payload != null) {
                     LOG.debugf("Received body: %s", payload.toString());
+                    payload.timestamp = Instant.now();
 
                     messageBus.publish(payload);
 /*

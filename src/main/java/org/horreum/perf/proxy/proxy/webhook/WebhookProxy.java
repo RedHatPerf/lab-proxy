@@ -13,6 +13,7 @@ import org.horreum.perf.proxy.services.MessageBus;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
+import java.time.Instant;
 
 @Path("/")
 public class WebhookProxy {
@@ -35,6 +36,7 @@ public class WebhookProxy {
         Response.Status status = Response.Status.ACCEPTED;
         try {
             requestPayload = objectMapper.readValue(payload, RequestPayload.class);
+            requestPayload.timestamp = Instant.now();
             bus.publish(requestPayload);
         } catch (JsonProcessingException e) {
             LOG.error("Error parsing payload", e);

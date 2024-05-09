@@ -1,11 +1,15 @@
 package org.horreum.perf.proxy.data;
 
+import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
 public class RequestPayload {
-    public String jobName;
 
+    @Nullable
+    public Instant timestamp;
+    public String jobName;
     public Map<String, String> parameters;
 
 

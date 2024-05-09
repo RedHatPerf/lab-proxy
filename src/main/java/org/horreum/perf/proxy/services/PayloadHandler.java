@@ -9,6 +9,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.apache.http.client.HttpResponseException;
 import org.horreum.perf.proxy.data.JobDefinition;
 import org.horreum.perf.proxy.data.RequestPayload;
 import org.horreum.perf.proxy.proxy.webhook.WebhookProxy;
@@ -125,24 +126,29 @@ public class PayloadHandler {
     public JobWithDetails getJobWithDetails(String[] jobPath) throws IOException {
         JobWithDetails jenkinsJob = null;
 
-        for (String jobName : jobPath) {
-            if (jenkinsJob == null) {
-                jenkinsJob = jenkinsServer.getJob(jobName);
-            } else {
-                if (!jenkinsJob.isBuildable()) {
-                    FolderJob folder = jenkinsServer.getFolderJob(jenkinsJob).orNull();
-                    if (folder == null) {
-                        Log.errorf("Could not retrieve folder: %s", jenkinsJob.getFullName());
+        try {
+            for (String jobName : jobPath) {
+                if (jenkinsJob == null) {
+                    jenkinsJob = jenkinsServer.getJob(jobName);
+                } else {
+                    if (!jenkinsJob.isBuildable()) {
+                        FolderJob folder = jenkinsServer.getFolderJob(jenkinsJob).orNull();
+                        if (folder == null) {
+                            Log.errorf("Could not retrieve folder: %s", jenkinsJob.getFullName());
+                            return null;
+                        }
+                        jenkinsJob = jenkinsServer.getJob(folder, jobName);
+                    } else {
+                        Log.errorf("Current job is not a folder: %s", jenkinsJob.getFullName());
                         return null;
                     }
-                    jenkinsJob = jenkinsServer.getJob(folder, jobName);
-                } else {
-                    Log.errorf("Current job is not a folder: %s", jenkinsJob.getFullName());
-                    return null;
                 }
             }
+            return jenkinsJob;
+        } catch (HttpResponseException e) {
+            Log.errorf("Could not retrieve Jenkins job: %d; %s", e.getStatusCode(), e.getReasonPhrase());
+            return null;
         }
-        return jenkinsJob;
     }
 }
 

@@ -7,14 +7,15 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.horreum.perf.proxy.proxy.ngrok.NgrokProxy;
 import org.horreum.perf.proxy.proxy.smee.SmeeIoProxy;
 import org.horreum.perf.proxy.services.MessageBus;
 
-@ApplicationScoped
+@Singleton
 public class ProxyManager {
-    IProxy proxy;
+    private IProxy proxy;
 
     @Inject
     ObjectMapper objectMapper;
@@ -52,4 +53,7 @@ public class ProxyManager {
 
     }
 
+    public IProxy getProxy() {
+        return proxy;
+    }
 }
